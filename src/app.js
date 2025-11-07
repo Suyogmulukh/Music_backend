@@ -12,21 +12,17 @@ const cors = require("cors");
 const app = express();
 
 // Update CORS configuration
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://music-frontend-48drz8s08-suyogs-projects-e7667438.vercel.app",
-      "https://music-frontend-48drz8s08-suyogs-projects-e7667438.vercel.app/",
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "https://music-frontend-48drz8s08-suyogs-projects-e7667438.vercel.app",
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
-// Add preflight handling
-app.options("*", cors());
+app.use(cors(corsOptions));
 
 app.use(cookieParser());
 app.use(express.json());
@@ -40,23 +36,31 @@ app.use((req, res, next) => {
   next();
 });
 
-// Add health check endpoint
-app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
-// Add root health check (add before other routes)
-app.get("/", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-// Routes
+// Routes (move these before error handlers)
 app.use("/api/inquiry", inquiryRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 
-// Update error handling to be Vercel-friendly
+// Add health check endpoint
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+// Add root health check
+app.get("/", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// 404 handler (move before error handler)
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+  });
+});
+
+// Error handling middleware (keep at the end)
 app.use((err, req, res, next) => {
   console.error("Error:", err.message);
 
@@ -74,12 +78,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Route not found",
-  });
+// Catch unhandled rejections and exceptions
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  // Give the server time to send any pending responses before exiting
+  setTimeout(() => process.exit(1), 1000);
 });
 
 module.exports = app;
