@@ -30,6 +30,14 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
+// Add root route handler (add this before other routes)
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "API is running",
+    environment: process.env.NODE_ENV,
+  });
+});
+
 // Routes
 app.use("/api/inquiry", inquiryRoutes);
 app.use("/api/calendar", calendarRoutes);

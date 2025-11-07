@@ -29,18 +29,22 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // For Vercel serverless functions
-module.exports = async (req, res) => {
+const handler = async (req, res) => {
   try {
     await initializeDB();
+    // Handle preflight requests
+    if (req.method === "OPTIONS") {
+      return res.status(200).end();
+    }
     return app(req, res);
   } catch (error) {
+    console.error("Server Error:", error);
     return res.status(500).json({
       success: false,
       message: "Server initialization failed",
-      error:
-        process.env.NODE_ENV === "development"
-          ? error.message
-          : "Internal Server Error",
     });
   }
 };
+
+// Export the handler for Vercel
+module.exports = handler;
