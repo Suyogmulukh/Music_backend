@@ -25,17 +25,22 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(morgan("dev"));
 
+// Add request timeout middleware (add after other app.use but before routes)
+app.use((req, res, next) => {
+  req.setTimeout(30000, () => {
+    res.status(408).json({ success: false, message: "Request timeout" });
+  });
+  next();
+});
+
 // Add health check endpoint
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-// Add root route handler (add this before other routes)
+// Add root health check (add before other routes)
 app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "API is running",
-    environment: process.env.NODE_ENV,
-  });
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 // Routes
@@ -47,6 +52,15 @@ app.use("/api/orders", orderRoutes);
 // Update error handling middleware
 app.use((err, req, res, next) => {
   console.error("Error:", err);
+
+  // Handle MongoDB connection errors
+  if (err.name === "MongooseServerSelectionError") {
+    return res.status(503).json({
+      success: false,
+      message: "Database connection error",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  }
 
   // Handle specific errors
   if (err.name === "ValidationError") {
