@@ -2,7 +2,12 @@ require("dotenv").config();
 const app = require("./src/app");
 const connectDB = require("./src/db/db");
 
-connectDB();
+let isConnected = false;
 
-// Export the app for Vercel serverless deployment
-module.exports = app;
+module.exports = async (req, res) => {
+  if (!isConnected) {
+    await connectDB();
+    isConnected = true;
+  }
+  app(req, res);
+};
