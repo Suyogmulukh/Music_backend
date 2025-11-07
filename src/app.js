@@ -2,7 +2,6 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
-// changed imports to match directory casing on disk (Routes vs routes)
 const calendarRoutes = require("./routes/calendar.routes");
 const inquiryRoutes = require("./Routes/inquiry.routes");
 const authRoutes = require("./routes/auth.routes");
@@ -11,14 +10,15 @@ const cors = require("cors");
 
 const app = express();
 
-// Update CORS to accept Vercel frontend URL
+// Update CORS configuration
 app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://your-vercel-frontend-url.vercel.app",
+      process.env.FRONTEND_URL || "https://your-vercel-frontend-url.vercel.app",
     ],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   })
 );
 app.use(cookieParser());
@@ -51,7 +51,19 @@ app.use("/api/orders", orderRoutes);
 
 // Update error handling middleware
 app.use((err, req, res, next) => {
-  console.error("Error:", err);
+  console.error("Error details:", {
+    name: err.name,
+    message: err.message,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
+
+  // Handle mongoose errors
+  if (err.name === "MongooseError" || err.name === "MongoServerError") {
+    return res.status(503).json({
+      success: false,
+      message: "Database service unavailable",
+    });
+  }
 
   // Handle MongoDB connection errors
   if (err.name === "MongooseServerSelectionError") {
