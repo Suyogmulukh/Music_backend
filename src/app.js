@@ -16,7 +16,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      process.env.FRONTEND_URL || "https://your-vercel-frontend-url.vercel.app",
+      process.env.FRONTEND_URL || "https://music-frontend-48drz8s08-suyogs-projects-e7667438.vercel.app/",
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
