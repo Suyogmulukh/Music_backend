@@ -1,27 +1,19 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
 const app = require("./src/app");
+const connectDB = require("./src/db/db");
 
-// Ensure mongoose debug is disabled in production
-mongoose.set("debug", process.env.NODE_ENV !== "production");
+let isConnected = false;
 
-// Cache database connection
-let cachedConnection = null;
-
-const connectDB = async () => {
-  if (cachedConnection) return;
+const connectToDatabase = async () => {
+  if (isConnected) return;
 
   try {
-    const connection = await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      bufferCommands: false,
-    });
-    cachedConnection = connection;
-    console.log("MongoDB Connected");
+    await connectDB();
+    isConnected = true;
+    console.log("Database connected successfully");
   } catch (error) {
-    console.error("MongoDB connection error:", error);
+    console.error("Database connection failed:", error);
     throw error;
   }
 };
@@ -29,7 +21,7 @@ const connectDB = async () => {
 // Development server
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3000;
-  connectDB().then(() => {
+  connectToDatabase().then(() => {
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   });
 }
@@ -37,8 +29,8 @@ if (process.env.NODE_ENV !== "production") {
 // Serverless handler
 const handler = async (req, res) => {
   try {
-    await connectDB();
-    return app(req, res);
+    await connectToDatabase();
+    await app(req, res);
   } catch (error) {
     console.error("Serverless function error:", error);
     return res.status(500).json({
@@ -49,5 +41,4 @@ const handler = async (req, res) => {
   }
 };
 
-// Export the handler
 module.exports = handler;

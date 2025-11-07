@@ -2,6 +2,7 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
+// changed imports to match directory casing on disk (Routes vs routes)
 const calendarRoutes = require("./routes/calendar.routes");
 const inquiryRoutes = require("./Routes/inquiry.routes");
 const authRoutes = require("./routes/auth.routes");
@@ -18,7 +19,7 @@ app.use(
       process.env.FRONTEND_URL || "https://your-vercel-frontend-url.vercel.app",
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   })
 );
 app.use(cookieParser());
@@ -54,7 +55,7 @@ app.use((err, req, res, next) => {
   console.error("Error details:", {
     name: err.name,
     message: err.message,
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 
   // Handle mongoose errors
