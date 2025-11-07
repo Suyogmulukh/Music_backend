@@ -25,15 +25,41 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(morgan("dev"));
 
+// Add health check endpoint
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // Routes
 app.use("/api/inquiry", inquiryRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 
-// Error handling middleware (add this before module.exports)
+// Update error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error("Error:", err);
+
+  // Handle specific errors
+  if (err.name === "ValidationError") {
+    return res.status(400).json({
+      success: false,
+      message: "Validation Error",
+      error: err.message,
+    });
+  }
+
+  if (err.name === "MongoError" || err.name === "MongooseError") {
+    return res.status(503).json({
+      success: false,
+      message: "Database Error",
+      error:
+        process.env.NODE_ENV === "development"
+          ? err.message
+          : "Service Temporarily Unavailable",
+    });
+  }
+
   res.status(500).json({
     success: false,
     message: "Internal Server Error",

@@ -1,31 +1,46 @@
 require("dotenv").config();
 const app = require("./src/app");
 const connectDB = require("./src/db/db");
-const PORT = process.env.PORT || 3000;
 
-// Initialize server only after DB connection
-const startServer = async () => {
+// Initialize database connection
+let cachedDB = null;
+
+async function initializeDB() {
+  if (cachedDB) {
+    return cachedDB;
+  }
   try {
-    await connectDB(); // Wait for DB connection
-    console.log("Database connected successfully");
+    cachedDB = await connectDB();
+    return cachedDB;
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    return null;
+  }
+}
 
+// For local development
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 3000;
+  initializeDB().then(() => {
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
+  });
+}
+
+// For Vercel serverless functions
+module.exports = async (req, res) => {
+  try {
+    await initializeDB();
+    return app(req, res);
   } catch (error) {
-    console.error("Failed to connect to database:", error);
-    process.exit(1);
+    return res.status(500).json({
+      success: false,
+      message: "Server initialization failed",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal Server Error",
+    });
   }
 };
-
-startServer();
-
-// Handle unhandled promise rejections
-process.on("unhandledRejection", (err) => {
-  console.error("Unhandled Promise Rejection:", err);
-  if (process.env.NODE_ENV === "development") {
-    process.exit(1);
-  }
-});
-
-module.exports = app;
