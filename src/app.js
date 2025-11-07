@@ -16,12 +16,18 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      process.env.FRONTEND_URL || "https://music-frontend-48drz8s08-suyogs-projects-e7667438.vercel.app/",
+      "https://music-frontend-48drz8s08-suyogs-projects-e7667438.vercel.app",
+      "https://music-frontend-48drz8s08-suyogs-projects-e7667438.vercel.app/",
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Add preflight handling
+app.options("*", cors());
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(morgan("dev"));
@@ -50,55 +56,21 @@ app.use("/api/calendar", calendarRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 
-// Update error handling middleware
+// Update error handling to be Vercel-friendly
 app.use((err, req, res, next) => {
-  console.error("Error details:", {
-    name: err.name,
-    message: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
+  console.error("Error:", err.message);
 
-  // Handle mongoose errors
-  if (err.name === "MongooseError" || err.name === "MongoServerError") {
-    return res.status(503).json({
+  if (err.name === "NotFoundError") {
+    return res.status(404).json({
       success: false,
-      message: "Database service unavailable",
+      message: "Resource not found",
     });
   }
 
-  // Handle MongoDB connection errors
-  if (err.name === "MongooseServerSelectionError") {
-    return res.status(503).json({
-      success: false,
-      message: "Database connection error",
-      error: process.env.NODE_ENV === "development" ? err.message : undefined,
-    });
-  }
-
-  // Handle specific errors
-  if (err.name === "ValidationError") {
-    return res.status(400).json({
-      success: false,
-      message: "Validation Error",
-      error: err.message,
-    });
-  }
-
-  if (err.name === "MongoError" || err.name === "MongooseError") {
-    return res.status(503).json({
-      success: false,
-      message: "Database Error",
-      error:
-        process.env.NODE_ENV === "development"
-          ? err.message
-          : "Service Temporarily Unavailable",
-    });
-  }
-
-  res.status(500).json({
+  return res.status(err.status || 500).json({
     success: false,
-    message: "Internal Server Error",
-    error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    message: err.message || "Internal Server Error",
+    error: process.env.NODE_ENV === "development" ? err.stack : undefined,
   });
 });
 
