@@ -1,5 +1,4 @@
 require("dotenv").config();
-const mongoose = require("mongoose");
 const app = require("./src/app");
 const connectDB = require("./src/db/db");
 
@@ -18,19 +17,11 @@ const connectToDatabase = async () => {
   }
 };
 
-// Development server
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 3000;
-  connectToDatabase().then(() => {
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  });
-}
-
-// Serverless handler
-const handler = async (req, res) => {
+// Serverless handler for Vercel
+module.exports = async (req, res) => {
   try {
     await connectToDatabase();
-    await app(req, res);
+    return app(req, res);
   } catch (error) {
     console.error("Serverless function error:", error);
     return res.status(500).json({
@@ -40,5 +31,3 @@ const handler = async (req, res) => {
     });
   }
 };
-
-module.exports = app;
