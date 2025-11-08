@@ -6,18 +6,12 @@ let isConnected = false;
 
 const connectToDatabase = async () => {
   if (isConnected) return;
-
-  try {
-    await connectDB();
-    isConnected = true;
-    console.log("Database connected successfully");
-  } catch (error) {
-    console.error("Database connection failed:", error);
-    throw error;
-  }
+  await connectDB();
+  isConnected = true;
+  console.log("MongoDB connected successfully");
 };
 
-// Serverless handler for Vercel
+// ✅ Serverless handler for Vercel
 module.exports = async (req, res) => {
   try {
     await connectToDatabase();
@@ -26,7 +20,7 @@ module.exports = async (req, res) => {
     console.error("Serverless function error:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: "Internal Server Error",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
