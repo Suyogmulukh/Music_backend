@@ -11,7 +11,7 @@ const orderRoutes = require("./routes/order.routes");
 
 const app = express();
 
-// ✅ Allow production frontend domain
+// ✅ Allow production frontend domains
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "*",
